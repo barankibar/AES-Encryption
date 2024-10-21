@@ -16,6 +16,14 @@ function App() {
             </KeyProvider>
           }
         />
+        <Route
+          path="/create-key"
+          element={
+            <KeyProvider>
+              <QRScanner />
+            </KeyProvider>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
