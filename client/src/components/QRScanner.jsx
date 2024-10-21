@@ -1,16 +1,20 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Scanner } from "@yudiel/react-qr-scanner";
+import { keyContext } from "../context/keyContext";
 
-const QRScanner = ({ onQRCodeScanned }) => {
+const QRScanner = () => {
+  const { setKey } = useContext(keyContext);
+
   const handleScan = (result) => {
     if (result) {
-      // Extract the `rawValue`
-      onQRCodeScanned(result.rawValue);
+      const { rawValue } = result;
+      console.log("Scanned QR code:", result.rawValue);
+      setKey(rawValue);
     }
   };
 
   const handleError = (error) => {
-    console.error("QR Scanner Error: ", error);
+    console.error("Error scanning QR code:", error);
   };
 
   return (

@@ -1,7 +1,24 @@
 import React from "react";
+import QRScanner from "./components/QRScanner";
+import { KeyProvider } from "./context/keyContext";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./components/Home";
 
 function App() {
-  return <div className="App"></div>;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <KeyProvider>
+              <Home />
+            </KeyProvider>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
