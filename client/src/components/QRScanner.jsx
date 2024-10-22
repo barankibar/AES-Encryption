@@ -3,17 +3,19 @@ import { Scanner } from "@yudiel/react-qr-scanner";
 import { keyContext } from "../context/keyContext";
 import { Card, CardContent, Typography, Grid, Alert, Box } from "@mui/material";
 import BG from "../assets/img/background.jpg";
+import { useNavigate } from "react-router-dom";
 
 const QRScanner = () => {
-  const { setKey } = useContext(keyContext);
+  const navigate = useNavigate();
+
+  const { setQrText } = useContext(keyContext);
   const [error, setError] = React.useState(null);
 
   const handleScan = (result) => {
     if (result) {
-      const { rawValue } = result;
-      console.log("Scanned QR code:", rawValue);
-      setKey(rawValue);
-      setError(null); // Clear error state
+      setQrText(result[0].rawValue);
+      setError(null);
+      navigate("/");
     }
   };
 
