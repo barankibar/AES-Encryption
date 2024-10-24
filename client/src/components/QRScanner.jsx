@@ -5,7 +5,7 @@ import { Card, CardContent, Typography, Grid, Alert, Box } from "@mui/material";
 import BG from "../assets/img/background.jpg";
 import { useNavigate } from "react-router-dom";
 
-const QRScanner = () => {
+const QRScanner = ({ redirect }) => {
   const navigate = useNavigate();
 
   const { setQrText } = useContext(keyContext);
@@ -15,7 +15,7 @@ const QRScanner = () => {
     if (result) {
       setQrText(result[0].rawValue);
       setError(null);
-      navigate("/");
+      navigate(redirect);
     }
   };
 

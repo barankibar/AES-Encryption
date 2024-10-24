@@ -11,7 +11,6 @@ import {
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import xaasBG from "../../assets/img/background.jpg";
 import xaasBGMobile from "../../assets/img/background-mobile.jpg";
-import Console from "./Console";
 
 // Create a custom theme with green and white colors
 const theme = createTheme({
@@ -28,7 +27,7 @@ const theme = createTheme({
   },
 });
 
-export default function Home() {
+export default function Home({ children }) {
   // Mobil cihazlar için genişlik kontrolü
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -72,7 +71,7 @@ export default function Home() {
                   borderRadius: 2,
                 }}
               >
-                <Console />
+                {children}
               </Paper>
             </Box>
           </Grid>

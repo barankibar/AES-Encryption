@@ -23,5 +23,18 @@ export const encryptFile = (fileContent, key) => {
 
 export const decryptFile = (encryptedContent, key) => {
   const bytes = CryptoJS.AES.decrypt(encryptedContent, key);
-  return bytes.toString(CryptoJS.enc.Utf8);
+
+  // Çözülmüş veriyi Base64 formatında string olarak al
+  const decryptedBase64 = bytes.toString(CryptoJS.enc.Base64);
+
+  // Base64 verisini binary hale getir
+  const binaryString = atob(decryptedBase64);
+
+  const len = binaryString.length;
+  const bytesArray = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytesArray[i] = binaryString.charCodeAt(i);
+  }
+
+  return new Blob([bytesArray], { type: "application/octet-stream" });
 };

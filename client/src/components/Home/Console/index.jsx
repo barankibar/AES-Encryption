@@ -12,10 +12,7 @@ import KeyIcon from "@mui/icons-material/Key";
 import LockIcon from "@mui/icons-material/Lock";
 import { useNavigate } from "react-router-dom";
 import { keyContext } from "../../../context/keyContext";
-import {
-  createAESKey,
-  encryptFile,
-} from "../../../utils/aesUtils";
+import { createAESKey, encryptFile } from "../../../utils/aesUtils";
 
 export default function Console() {
   const navigate = useNavigate();
