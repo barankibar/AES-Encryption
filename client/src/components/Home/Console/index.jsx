@@ -17,9 +17,9 @@ import { createAESKey, encryptFile } from "../../../utils/aesUtils";
 export default function Console() {
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
-  const [encryptedContent, setEncryptedContent] = useState(null);
   const [aesKeySize, setAesKeySize] = useState(128); // 128, 192, or 256
   const { setKey, qrText, key } = useContext(keyContext);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (qrText) {
@@ -45,19 +45,27 @@ export default function Console() {
 
   const handleEncrypt = () => {
     if (file && key) {
+      console.log("File: ", file);
       const encrypted = encryptFile(file.content, key);
-      setEncryptedContent(encrypted);
+      setFile({
+        ...file, // Diğer tüm dosya özelliklerini koru
+        content: encrypted, // Sadece içeriği değiştir
+        name: `encrypted_${file.name}`, // Şifrelenmiş dosya için yeni bir isim ver
+      });
+      setSuccess(true);
     }
   };
 
-  const downloadFile = (data, filename, type) => {
-    const blob = new Blob([data], { type });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    window.URL.revokeObjectURL(url);
+  const downloadFile = (file) => {
+    const blob = new Blob([file.content], { type: file.type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -74,7 +82,7 @@ export default function Console() {
         flexDirection: "column",
       }}
     >
-      {!encryptedContent && key && (
+      {!success && key && (
         <Grid item xs={12}>
           <input
             type="file"
@@ -97,7 +105,7 @@ export default function Console() {
           </label>
         </Grid>
       )}
-      {!encryptedContent && (
+      {!success && (
         <Grid item sx={{ mt: 2 }}>
           <ButtonGroup
             variant="contained"
@@ -138,7 +146,7 @@ export default function Console() {
           </ButtonGroup>
         </Grid>
       )}
-      {!encryptedContent && (
+      {!success && (
         <>
           {key ? (
             <Paper
@@ -177,7 +185,7 @@ export default function Console() {
         </>
       )}
 
-      {!encryptedContent ? (
+      {!success ? (
         <>
           {file && key && (
             <Button
@@ -202,7 +210,7 @@ export default function Console() {
         </Button>
       )}
 
-      {encryptedContent && (
+      {success && (
         <Box
           sx={{
             mt: 2,
@@ -214,7 +222,36 @@ export default function Console() {
           <Typography variant="h6" sx={{ mb: 1 }}>
             Şifrelenmiş İçerik:
           </Typography>
-          <img src={encryptedContent} />
+          {file && (
+            <Box
+              sx={{
+                mt: 2,
+                width: "200px",
+                height: "200px",
+                border: "1px solid #ddd",
+                borderRadius: "8px",
+                overflow: "hidden",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "#f9f9f9",
+              }}
+            >
+              {file.type.startsWith("image/") && (
+                <img
+                  src={file.content}
+                  style={{ maxWidth: "100%", maxHeight: "100%" }}
+                />
+              )}
+              {file.type.startsWith("video/") && (
+                <video
+                  controls
+                  src={file.content}
+                  style={{ maxWidth: "100%", maxHeight: "100%" }}
+                />
+              )}
+            </Box>
+          )}
           <hr />
           <Typography
             variant="body2"
@@ -224,26 +261,20 @@ export default function Console() {
               overflowY: "auto",
             }}
           >
-            {encryptedContent}
+            {file.content}
           </Typography>
           <Button
             variant="contained"
             size="small"
             sx={{ mt: 2, backgroundColor: "#03a9f4", color: "#fff" }}
-            onClick={() =>
-              downloadFile(
-                encryptedContent,
-                `encrypted_${file.name}`,
-                "application/octet-stream"
-              )
-            }
+            onClick={() => downloadFile(file)}
           >
             Şifrelenmiş Dosyayı İndir
           </Button>
         </Box>
       )}
 
-      {file && !encryptedContent && (
+      {file && !success && (
         <Box
           sx={{
             mt: 2,
