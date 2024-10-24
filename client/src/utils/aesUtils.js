@@ -16,3 +16,12 @@ export const createAESKey = (text, keySize) => {
   // Return the key as a hexadecimal string for use in encryption
   return key.toString(CryptoJS.enc.Hex);
 };
+
+export const encryptFile = (fileContent, key) => {
+  return CryptoJS.AES.encrypt(fileContent, key).toString();
+};
+
+export const decryptFile = (encryptedContent, key) => {
+  const bytes = CryptoJS.AES.decrypt(encryptedContent, key);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};

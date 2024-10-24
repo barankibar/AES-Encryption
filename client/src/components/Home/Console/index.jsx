@@ -12,13 +12,16 @@ import KeyIcon from "@mui/icons-material/Key";
 import LockIcon from "@mui/icons-material/Lock";
 import { useNavigate } from "react-router-dom";
 import { keyContext } from "../../../context/keyContext";
-import { createAESKey } from "../../../utils/aesUtils";
+import {
+  createAESKey,
+  encryptFile,
+} from "../../../utils/aesUtils";
 
 export default function Console() {
   const navigate = useNavigate();
-
   const [file, setFile] = useState(null);
-  const [aesKeySize, setAesKeySize] = useState(128);
+  const [encryptedContent, setEncryptedContent] = useState(null);
+  const [aesKeySize, setAesKeySize] = useState(128); // 128, 192, or 256
   const { setKey, qrText, key } = useContext(keyContext);
 
   useEffect(() => {
@@ -43,7 +46,22 @@ export default function Console() {
     }
   };
 
-  const handleEncrypt = () => {};
+  const handleEncrypt = () => {
+    if (file && key) {
+      const encrypted = encryptFile(file.content, key);
+      setEncryptedContent(encrypted);
+    }
+  };
+
+  const downloadFile = (data, filename, type) => {
+    const blob = new Blob([data], { type });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <Grid
@@ -59,7 +77,7 @@ export default function Console() {
         flexDirection: "column",
       }}
     >
-      <>
+      {!encryptedContent && key && (
         <Grid item xs={12}>
           <input
             type="file"
@@ -81,103 +99,154 @@ export default function Console() {
             </Button>
           </label>
         </Grid>
-      </>
+      )}
+      {!encryptedContent && (
+        <Grid item sx={{ mt: 2 }}>
+          <ButtonGroup
+            variant="contained"
+            color="primary"
+            size="small"
+            aria-label="AES key size selection"
+          >
+            <Button
+              onClick={() => setAesKeySize(128)}
+              sx={{
+                color: aesKeySize === 128 ? "#fff" : "#000",
+                border: "none",
+              }}
+              variant={aesKeySize === 128 ? "contained" : "outlined"}
+            >
+              AES 128
+            </Button>
+            <Button
+              sx={{
+                color: aesKeySize === 192 ? "#fff" : "#000",
+                border: "none",
+              }}
+              onClick={() => setAesKeySize(192)}
+              variant={aesKeySize === 192 ? "contained" : "outlined"}
+            >
+              AES 192
+            </Button>
+            <Button
+              onClick={() => setAesKeySize(256)}
+              sx={{
+                color: aesKeySize === 256 ? "#fff" : "#000",
+                border: "none",
+              }}
+              variant={aesKeySize === 256 ? "contained" : "outlined"}
+            >
+              AES 256
+            </Button>
+          </ButtonGroup>
+        </Grid>
+      )}
+      {!encryptedContent && (
+        <>
+          {key ? (
+            <Paper
+              elevation={3}
+              sx={{
+                mt: 2,
+                padding: 2,
+                width: "80%",
+                textAlign: "center",
+                backgroundColor: "#f0f0f0",
+                borderRadius: "8px",
+              }}
+            >
+              <Typography variant="h6" sx={{ mb: 1 }}>
+                Simetrik Anahtar:
+              </Typography>
+              <Typography variant="body1" sx={{ wordWrap: "break-word" }}>
+                {key}
+              </Typography>
+            </Paper>
+          ) : (
+            <Grid item>
+              <Button
+                variant="contained"
+                size="small"
+                sx={{ margin: 1, backgroundColor: "#4caf50", color: "#fff" }}
+                startIcon={<KeyIcon />}
+                onClick={() => {
+                  navigate("/create-key");
+                }}
+              >
+                Simetrik Anahtar Oluştur
+              </Button>
+            </Grid>
+          )}
+        </>
+      )}
 
-      <Grid item sx={{ mt: 2 }}>
-        <ButtonGroup
+      {!encryptedContent ? (
+        <>
+          {file && key && (
+            <Button
+              variant="contained"
+              size="small"
+              sx={{ marginTop: 2, color: "#fff" }}
+              startIcon={<LockIcon />}
+              onClick={handleEncrypt}
+            >
+              Şifrele
+            </Button>
+          )}
+        </>
+      ) : (
+        <Button
           variant="contained"
-          color="primary"
           size="small"
-          aria-label="AES key size selection"
+          sx={{ mt: 2, color: "#fff" }}
+          onClick={() => navigate("/decrypt")}
         >
-          <Button
-            onClick={() => setAesKeySize(128)}
-            sx={{ color: aesKeySize === 128 ? "#fff" : "#000", border: "none" }}
-            variant={aesKeySize === 128 ? "contained" : "outlined"}
-          >
-            AES 128
-          </Button>
-          <Button
-            sx={{ color: aesKeySize === 192 ? "#fff" : "#000", border: "none" }}
-            onClick={() => setAesKeySize(192)}
-            variant={aesKeySize === 192 ? "contained" : "outlined"}
-          >
-            AES 192
-          </Button>
-          <Button
-            onClick={() => setAesKeySize(256)}
-            sx={{ color: aesKeySize === 256 ? "#fff" : "#000", border: "none" }}
-            variant={aesKeySize === 256 ? "contained" : "outlined"}
-          >
-            AES 256
-          </Button>
-        </ButtonGroup>
-      </Grid>
+          Şifre Çöz
+        </Button>
+      )}
 
-      {/* Simetrik Anahtar Oluştur veya Anahtarı Göster */}
-      {key ? (
-        <Paper
-          elevation={3}
+      {encryptedContent && (
+        <Box
           sx={{
             mt: 2,
             padding: 2,
             width: "80%",
             textAlign: "center",
-            backgroundColor: "#f0f0f0",
-            borderRadius: "8px",
           }}
         >
           <Typography variant="h6" sx={{ mb: 1 }}>
-            Simetrik Anahtar:
+            Şifrelenmiş İçerik:
           </Typography>
-          <Typography variant="body1" sx={{ wordWrap: "break-word" }}>
-            {key}
+          <img src={encryptedContent} />
+          <hr />
+          <Typography
+            variant="body2"
+            sx={{
+              wordWrap: "break-word",
+              maxHeight: "150px",
+              overflowY: "auto",
+            }}
+          >
+            {encryptedContent}
           </Typography>
-        </Paper>
-      ) : (
-        <Grid
-          container
-          item
-          xs={12}
-          justifyContent="center"
-          sx={{
-            mt: 2,
-            justifyContent: "center",
-            alignItems: "center",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <Grid item>
-            <Button
-              variant="contained"
-              size="small"
-              sx={{ margin: 1, backgroundColor: "#4caf50", color: "#fff" }}
-              startIcon={<KeyIcon />}
-              onClick={() => {
-                navigate("/create-key");
-              }}
-            >
-              Simetrik Anahtar Oluştur
-            </Button>
-          </Grid>
-        </Grid>
+          <Button
+            variant="contained"
+            size="small"
+            sx={{ mt: 2, backgroundColor: "#03a9f4", color: "#fff" }}
+            onClick={() =>
+              downloadFile(
+                encryptedContent,
+                `encrypted_${file.name}`,
+                "application/octet-stream"
+              )
+            }
+          >
+            Şifrelenmiş Dosyayı İndir
+          </Button>
+        </Box>
       )}
 
-      {file && key && (
-        <Button
-          variant="contained"
-          size="small"
-          sx={{ marginTop: 2, color: "#fff", backgroundColor: "#4caf50" }}
-          startIcon={<LockIcon />}
-          onClick={handleEncrypt}
-        >
-          Şifrele
-        </Button>
-      )}
-
-      {/* Dosya Önizlemesi */}
-      {file && (
+      {file && !encryptedContent && (
         <Box
           sx={{
             mt: 2,
