@@ -12,14 +12,21 @@ import KeyIcon from "@mui/icons-material/Key";
 import LockIcon from "@mui/icons-material/Lock";
 import { useNavigate } from "react-router-dom";
 import { keyContext } from "../../../context/keyContext";
-import { createAESKey, encryptFile } from "../../../utils/aesUtils";
+import { createAESKey } from "../../../utils/aesUtils";
+import { FileSize } from "../../../utils/fileUtils";
+import CryptoJS from "crypto-js";
 
 export default function Console() {
   const navigate = useNavigate();
-  const [file, setFile] = useState(null);
   const [aesKeySize, setAesKeySize] = useState(128); // 128, 192, or 256
   const { setKey, qrText, key } = useContext(keyContext);
   const [success, setSuccess] = useState(false);
+  const [originalImagePreview, setOriginalImagePreview] = useState(null);
+  const [originalImageSize, setOriginalImageSize] = useState(null);
+  const [encryptedImageText, setEncryptedImageText] = useState(null);
+  const [encryptedTextSize, setEncryptedTextSize] = useState(null);
+  const [fileSelected, setFileSelected] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
     if (qrText) {
@@ -27,45 +34,45 @@ export default function Console() {
     }
   }, [qrText, aesKeySize]);
 
-  const handleFileSelect = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFile({
-          name: selectedFile.name,
-          content: event.target.result,
-          size: selectedFile.size,
-          type: selectedFile.type,
-        });
-      };
-      reader.readAsDataURL(selectedFile);
-    }
+  const encrypt = (plainText, password) => {
+    return CryptoJS.AES.encrypt(
+      plainText,
+      password,
+      "{ mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }"
+    ).toString();
   };
 
-  const handleEncrypt = () => {
-    if (file && key) {
-      console.log("File: ", file);
-      const encrypted = encryptFile(file.content, key);
-      setFile({
-        ...file, // Diğer tüm dosya özelliklerini koru
-        content: encrypted, // Sadece içeriği değiştir
-        name: `encrypted_${file.name}`, // Şifrelenmiş dosya için yeni bir isim ver
-      });
+  const handleEncrypt = (file) => {
+    const reader = new FileReader();
+    reader.onload = function () {
+      let originalImageString = reader.result
+        .replace("data:", "")
+        .replace(/^.+,/, "");
+      setOriginalImagePreview("data:image/png;base64," + originalImageString);
+      setOriginalImageSize(
+        FileSize(new TextEncoder().encode(originalImageString).length)
+      );
+
+      // Encrypt
+      const encryptedImageString = encrypt(originalImageString, key);
+      setEncryptedImageText("data:image/png;base64," + encryptedImageString);
+      setEncryptedTextSize(
+        FileSize(new TextEncoder().encode(encryptedImageString).length)
+      );
       setSuccess(true);
-    }
+    };
+
+    reader.readAsDataURL(file);
   };
 
-  const downloadFile = (file) => {
-    const blob = new Blob([file.content], { type: file.type });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleFileSelect = (event) => {
+    const [file] = event.target.files;
+    if (file) {
+      setFileSelected(true);
+      setOriginalImagePreview(URL.createObjectURL(file));
+      setSelectedFile(file);
+      setSuccess(false);
+    }
   };
 
   return (
@@ -113,36 +120,19 @@ export default function Console() {
             size="small"
             aria-label="AES key size selection"
           >
-            <Button
-              onClick={() => setAesKeySize(128)}
-              sx={{
-                color: aesKeySize === 128 ? "#fff" : "#000",
-                border: "none",
-              }}
-              variant={aesKeySize === 128 ? "contained" : "outlined"}
-            >
-              AES 128
-            </Button>
-            <Button
-              sx={{
-                color: aesKeySize === 192 ? "#fff" : "#000",
-                border: "none",
-              }}
-              onClick={() => setAesKeySize(192)}
-              variant={aesKeySize === 192 ? "contained" : "outlined"}
-            >
-              AES 192
-            </Button>
-            <Button
-              onClick={() => setAesKeySize(256)}
-              sx={{
-                color: aesKeySize === 256 ? "#fff" : "#000",
-                border: "none",
-              }}
-              variant={aesKeySize === 256 ? "contained" : "outlined"}
-            >
-              AES 256
-            </Button>
+            {[128, 192, 256].map((size) => (
+              <Button
+                key={size}
+                onClick={() => setAesKeySize(size)}
+                sx={{
+                  color: aesKeySize === size ? "#fff" : "#000",
+                  border: "none",
+                }}
+                variant={aesKeySize === size ? "contained" : "outlined"}
+              >
+                AES {size}
+              </Button>
+            ))}
           </ButtonGroup>
         </Grid>
       )}
@@ -174,9 +164,7 @@ export default function Console() {
                 size="small"
                 sx={{ margin: 1, backgroundColor: "#4caf50", color: "#fff" }}
                 startIcon={<KeyIcon />}
-                onClick={() => {
-                  navigate("/create-key");
-                }}
+                onClick={() => navigate("/create-key")}
               >
                 Simetrik Anahtar Oluştur
               </Button>
@@ -185,96 +173,68 @@ export default function Console() {
         </>
       )}
 
-      {!success ? (
-        <>
-          {file && key && (
-            <Button
-              variant="contained"
-              size="small"
-              sx={{ marginTop: 2, color: "#fff" }}
-              startIcon={<LockIcon />}
-              onClick={handleEncrypt}
-            >
-              Şifrele
-            </Button>
-          )}
-        </>
-      ) : (
+      {key && fileSelected && (
         <Button
           variant="contained"
           size="small"
-          sx={{ mt: 2, color: "#fff" }}
-          onClick={() => navigate("/decrypt")}
+          sx={{ marginTop: 2, color: "#fff" }}
+          startIcon={<LockIcon />}
+          onClick={() => handleEncrypt(selectedFile)}
         >
-          Şifre Çöz
+          Şifrele
         </Button>
       )}
 
       {success && (
-        <Box
-          sx={{
-            mt: 2,
-            padding: 2,
-            width: "80%",
-            textAlign: "center",
-          }}
-        >
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Şifrelenmiş İçerik:
-          </Typography>
-          {file && (
-            <Box
-              sx={{
-                mt: 2,
-                width: "200px",
-                height: "200px",
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                overflow: "hidden",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: "#f9f9f9",
-              }}
-            >
-              {file.type.startsWith("image/") && (
-                <img
-                  src={file.content}
-                  style={{ maxWidth: "100%", maxHeight: "100%" }}
-                />
-              )}
-              {file.type.startsWith("video/") && (
-                <video
-                  controls
-                  src={file.content}
-                  style={{ maxWidth: "100%", maxHeight: "100%" }}
-                />
-              )}
-            </Box>
-          )}
-          <hr />
-          <Typography
-            variant="body2"
+        <>
+          <Box
             sx={{
-              wordWrap: "break-word",
-              maxHeight: "150px",
-              overflowY: "auto",
+              mt: 2,
+              padding: 2,
+              width: "80%",
+              textAlign: "center",
             }}
           >
-            {file.content}
-          </Typography>
-          <Button
-            variant="contained"
-            size="small"
-            sx={{ mt: 2, backgroundColor: "#03a9f4", color: "#fff" }}
-            onClick={() => downloadFile(file)}
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              Şifrelenmiş İçerik:
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                wordWrap: "break-word",
+                maxHeight: "150px",
+                overflowY: "auto",
+              }}
+            >
+              {encryptedImageText}
+            </Typography>
+          </Box>
+
+          <Paper
+            elevation={3}
+            sx={{
+              mt: 2,
+              padding: 2,
+              width: "80%",
+              textAlign: "center",
+              backgroundColor: "#f7f7f7",
+              borderRadius: "8px",
+            }}
           >
-            Şifrelenmiş Dosyayı İndir
-          </Button>
-        </Box>
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Orijinal ve Şifrelenmiş Dosya Boyutları
+            </Typography>
+            <Typography variant="body2">
+              Orijinal Boyut: {originalImageSize}
+            </Typography>
+            <Typography variant="body2">
+              Şifrelenmiş Boyut: {encryptedTextSize}
+            </Typography>
+          </Paper>
+        </>
       )}
 
-      {file && !success && (
+      {fileSelected && !success && (
         <Box
           sx={{
             mt: 2,
@@ -289,20 +249,11 @@ export default function Console() {
             backgroundColor: "#f9f9f9",
           }}
         >
-          {file.type.startsWith("image/") && (
-            <img
-              src={file.content}
-              alt={file.name}
-              style={{ maxWidth: "100%", maxHeight: "100%" }}
-            />
-          )}
-          {file.type.startsWith("video/") && (
-            <video
-              controls
-              src={file.content}
-              style={{ maxWidth: "100%", maxHeight: "100%" }}
-            />
-          )}
+          <img
+            src={originalImagePreview}
+            alt="Orijinal Dosya"
+            style={{ maxWidth: "100%", maxHeight: "100%" }}
+          />
         </Box>
       )}
     </Grid>

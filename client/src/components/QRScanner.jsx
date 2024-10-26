@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { keyContext } from "../context/keyContext";
 import { Card, CardContent, Typography, Grid, Alert, Box } from "@mui/material";
@@ -10,6 +10,14 @@ const QRScanner = ({ redirect }) => {
 
   const { setQrText } = useContext(keyContext);
   const [error, setError] = React.useState(null);
+
+  //  Development purposes
+  // useEffect(() => {
+  //   setQrText(
+  //     "Z2tOnpa/MBAvqI38Uy81Vs9x6PVVF6tedsZNkSignXaC8/drA3Q/j8RnB9Kmp0Z6"
+  //   );
+  //   navigate(redirect);
+  // }, [setQrText, navigate]);
 
   const handleScan = (result) => {
     if (result) {

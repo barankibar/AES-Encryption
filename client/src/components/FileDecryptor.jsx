@@ -5,23 +5,25 @@ import {
   Typography,
   Paper,
   ButtonGroup,
+  TextField,
 } from "@mui/material";
 import React, { useContext, useEffect, useState } from "react";
-import { decryptFile } from "../utils/aesUtils";
+import { FileSize } from "../utils/fileUtils";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import KeyIcon from "@mui/icons-material/Key";
 import { useNavigate } from "react-router-dom";
 import { keyContext } from "../context/keyContext";
 import { createAESKey } from "../utils/aesUtils";
+import CryptoJS from "crypto-js";
 
 const FileDecryptor = () => {
   const navigate = useNavigate();
   const { setKey, qrText, key } = useContext(keyContext);
 
   const [aesKeySize, setAesKeySize] = useState(128);
-  const [file, setFile] = useState(null);
-  const [decryptedData, setDecryptedData] = useState(null);
-  const [fileType, setFileType] = useState("");
+  const [cipherString, setCipherString] = useState("");
+  const [decryptedImageSize, setDecryptedImageSize] = useState("");
+  const [decryptedImagePreview, setDecryptedImagePreview] = useState("");
 
   useEffect(() => {
     if (qrText) {
@@ -29,27 +31,26 @@ const FileDecryptor = () => {
     }
   }, [qrText, aesKeySize]);
 
-  const handleDecrypt = () => {
-    if (file && key) {
-      const decrypted = decryptFile(file.content, key);
-      setDecryptedData(decrypted);
+  const decrypt = () => {
+    if (cipherString && key) {
+      // remove "data:image/png;base64," from start
+      const cipherStringWithoutPrefix = cipherString.slice(22);
+      const decryptedString = CryptoJS.AES.decrypt(
+        cipherStringWithoutPrefix,
+        key
+      ).toString(CryptoJS.enc.Utf8);
+
+      return decryptedString;
     }
   };
 
-  const handleFileSelect = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFile({
-          name: selectedFile.name,
-          content: event.target.result,
-          size: selectedFile.size,
-          type: selectedFile.type,
-        });
-      };
-      reader.readAsDataURL(selectedFile);
-    }
+  const handleDecrypt = (encryptedImageString) => {
+    const decryptedImageString = decrypt(encryptedImageString, key);
+
+    setDecryptedImagePreview("data:image/png;base64," + decryptedImageString);
+    setDecryptedImageSize(
+      FileSize(new TextEncoder().encode(decryptedImageString).length)
+    );
   };
 
   return (
@@ -68,25 +69,14 @@ const FileDecryptor = () => {
     >
       {key && (
         <Grid item xs={12}>
-          <input
-            type="file"
-            id="file"
-            style={{ display: "none" }}
-            accept="image/*,video/*"
-            onChange={handleFileSelect}
+          <TextField
+            id="outlined-basic"
+            label="Outlined"
+            variant="outlined"
+            onChange={(event) => {
+              setCipherString(event.target.value);
+            }}
           />
-          <label htmlFor="file">
-            <Button
-              component="span"
-              variant="contained"
-              color="success"
-              size="small"
-              sx={{ margin: 1 }}
-              startIcon={<UploadFileIcon />}
-            >
-              Şifrelenmiş Dosya Yükle
-            </Button>
-          </label>
         </Grid>
       )}
       <Grid item sx={{ mt: 2 }}>
@@ -170,73 +160,36 @@ const FileDecryptor = () => {
         variant="contained"
         color="primary"
         onClick={handleDecrypt}
-        disabled={!file || !key}
+        disabled={!key || !cipherString}
         sx={{ marginBottom: "10px", mt: 5 }}
       >
         Şifreyi Çöz
       </Button>
-      {decryptedData && (
-        <Box
-          sx={{
-            mt: 2,
-            width: "200px",
-            height: "200px",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-            overflow: "hidden",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "#f0f0f0",
+      <Box
+        sx={{
+          mt: 2,
+          width: "200px",
+          height: "200px",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          overflow: "hidden",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#f9f9f9",
+        }}
+      >
+        <img
+          src={decryptedImagePreview}
+          alt="Decrypted Image"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            borderRadius: "inherit",
           }}
-        >
-          {fileType.startsWith("image/") && (
-            <img
-              src={decryptedData}
-              alt="Decrypted"
-              style={{ maxWidth: "100%", maxHeight: "100%" }}
-            />
-          )}
-          {fileType.startsWith("video/") && (
-            <video
-              controls
-              src={decryptedData}
-              style={{ maxWidth: "100%", maxHeight: "100%" }}
-            />
-          )}
-        </Box>
-      )}
-
-      {file && (
-        <Box
-          sx={{
-            mt: 2,
-            width: "200px",
-            height: "200px",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-            overflow: "hidden",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "#f9f9f9",
-          }}
-        >
-          {file.type.startsWith("image/") && (
-            <img
-              src={file.content}
-              style={{ maxWidth: "100%", maxHeight: "100%" }}
-            />
-          )}
-          {file.type.startsWith("video/") && (
-            <video
-              controls
-              src={file.content}
-              style={{ maxWidth: "100%", maxHeight: "100%" }}
-            />
-          )}
-        </Box>
-      )}
+        />
+      </Box>
     </Grid>
   );
 };
