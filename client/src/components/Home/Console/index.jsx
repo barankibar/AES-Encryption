@@ -10,6 +10,7 @@ import {
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import KeyIcon from "@mui/icons-material/Key";
 import LockIcon from "@mui/icons-material/Lock";
+import DownloadIcon from "@mui/icons-material/Download";
 import { useNavigate } from "react-router-dom";
 import { keyContext } from "../../../context/keyContext";
 import { createAESKey } from "../../../utils/aesUtils";
@@ -73,6 +74,14 @@ export default function Console() {
       setSelectedFile(file);
       setSuccess(false);
     }
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([encryptedImageText], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "encrypted_data.txt";
+    link.click();
   };
 
   return (
@@ -173,7 +182,7 @@ export default function Console() {
         </>
       )}
 
-      {key && fileSelected && (
+      {key && fileSelected && !success && (
         <Button
           variant="contained"
           size="small"
@@ -198,6 +207,15 @@ export default function Console() {
             <Typography variant="h6" sx={{ mb: 1 }}>
               Şifrelenmiş İçerik:
             </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              sx={{ margin: 1 }}
+              onClick={() => navigator.clipboard.writeText(encryptedImageText)}
+            >
+              Kopyala
+            </Button>
+
             <Typography
               variant="body2"
               sx={{
@@ -231,6 +249,16 @@ export default function Console() {
               Şifrelenmiş Boyut: {encryptedTextSize}
             </Typography>
           </Paper>
+
+          <Button
+            variant="contained"
+            color="secondary"
+            sx={{ mt: 2 }}
+            startIcon={<DownloadIcon />}
+            onClick={handleDownload}
+          >
+            Şifrelenmiş Dosyayı İndir
+          </Button>
         </>
       )}
 
