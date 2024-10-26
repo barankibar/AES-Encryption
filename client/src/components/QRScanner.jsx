@@ -7,20 +7,11 @@ import { useNavigate } from "react-router-dom";
 
 const QRScanner = ({ redirect }) => {
   const navigate = useNavigate();
-
   const { setQrText } = useContext(keyContext);
   const [error, setError] = React.useState(null);
 
-  //  Development purposes
-  // useEffect(() => {
-  //   setQrText(
-  //     "Z2tOnpa/MBAvqI38Uy81Vs9x6PVVF6tedsZNkSignXaC8/drA3Q/j8RnB9Kmp0Z6"
-  //   );
-  //   navigate(redirect);
-  // }, [setQrText, navigate]);
-
   const handleScan = (result) => {
-    if (result) {
+    if (result && result[0]) {
       setQrText(result[0].rawValue);
       setError(null);
       navigate(redirect);
@@ -28,8 +19,8 @@ const QRScanner = ({ redirect }) => {
   };
 
   const handleError = (error) => {
-    console.error("Error scanning QR code:", error);
-    setError("QR kod taranırken bir hata oluştu. Lütfen tekrar deneyin.");
+    console.error("Error scanning code:", error);
+    setError("Kod taranırken bir hata oluştu. Lütfen tekrar deneyin.");
   };
 
   return (
@@ -65,10 +56,10 @@ const QRScanner = ({ redirect }) => {
           >
             <CardContent>
               <Typography variant="h6" gutterBottom align="center">
-                QR Kodunu Tara
+                QR veya Barkod Tara
               </Typography>
               <Typography variant="body2" color="textSecondary" align="center">
-                Lütfen anahtarınızı oluşturmak için QR kodu kameranıza gösterin.
+                Lütfen anahtarınızı oluşturmak için kodu kameranıza gösterin.
               </Typography>
               {error && (
                 <Alert severity="error" sx={{ mt: 2 }}>
@@ -91,6 +82,18 @@ const QRScanner = ({ redirect }) => {
                   onScan={handleScan}
                   onError={handleError}
                   constraints={{ facingMode: "environment" }}
+                  formats={[
+                    "qr_code",
+                    "code_128",
+                    "code_39",
+                    "ean_13",
+                    "ean_8",
+                    "upc_a",
+                    "upc_e",
+                    "codabar",
+                    "data_matrix",
+                    "pdf417",
+                  ]} // List of supported barcode formats
                   style={{ width: "100%", height: "100%" }}
                 />
               </Box>
