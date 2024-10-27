@@ -56,6 +56,7 @@ export default function Console() {
 
       // Encrypt
       const encryptedImageString = encrypt(originalImageString, key);
+      console.log("Başarılı bir şekilde şifrelendi!");
       setEncryptedImageText("data:image/png;base64," + encryptedImageString);
       setEncryptedTextSize(
         FileSize(new TextEncoder().encode(encryptedImageString).length)

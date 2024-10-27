@@ -44,6 +44,7 @@ const FileDecryptor = () => {
         key
       ).toString(CryptoJS.enc.Utf8);
 
+      console.log("Başarılı bir şekilde deşifre edildi!");
       return decryptedString;
     }
   };
