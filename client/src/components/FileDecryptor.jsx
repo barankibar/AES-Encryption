@@ -142,7 +142,7 @@ const FileDecryptor = () => {
                 sx={{ margin: 1 }}
                 startIcon={<UploadFileIcon />}
               >
-                Şifrelenecek Dosyayı Seç
+                Şifrelenmiş Dosyayı Seç
               </Button>
             </label>
           </Grid>
